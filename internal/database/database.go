@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/mattn/go-sqlite3"
+	"todo-rest/internal/config"
 	"todo-rest/internal/models"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
@@ -47,10 +49,10 @@ func InitDb() *sql.DB {
 	createTable := `
     CREATE TABLE IF NOT EXISTS scheduler (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL,
-        title TEXT NOT NULL,
+        date VARCHAR(10) NOT NULL,
+        title VARCHAR(128) NOT NULL,
         comment TEXT,
-        repeat TEXT(128)
+        repeat VARCHAR(128)
     );
     CREATE INDEX IF NOT EXISTS idx_date ON scheduler (date);
     `
@@ -81,14 +83,14 @@ func AddTask(task models.Task) (int, error) {
 }
 
 // GetTasks выводит список всех задач или по фильтру
-func GetTasks(search string, searchData bool) (tasks []models.Task, err error) {
-	query := "SELECT * FROM scheduler ORDER BY date LIMIT :limit"
-	if search != "" && !searchData {
-		query = "SELECT * FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit"
-	} else if search != "" && searchData {
-		query = "SELECT * FROM scheduler WHERE date = :search LIMIT :limit"
+func GetTasks(filter models.TaskFilter) (tasks []models.Task, err error) {
+	query := "SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT :limit"
+	if filter.Search != "" && !filter.SearchData {
+		query = "SELECT id, date, title, comment, repeat FROM scheduler WHERE title LIKE :search OR comment LIKE :search ORDER BY date LIMIT :limit"
+	} else if filter.Search != "" && filter.SearchData {
+		query = "SELECT id, date, title, comment, repeat FROM scheduler WHERE date = :search LIMIT :limit"
 	}
-	rows, err := db.Query(query, sql.Named("search", search), sql.Named("limit", 20))
+	rows, err := db.Query(query, sql.Named("search", filter.Search), sql.Named("limit", config.LimitSearch))
 	if err != nil {
 		return []models.Task{}, errors.New("error getting task list")
 	}
@@ -115,7 +117,7 @@ func GetTasks(search string, searchData bool) (tasks []models.Task, err error) {
 func GetTask(id string) (models.Task, error) {
 	var task models.Task
 
-	row := db.QueryRow("SELECT * FROM scheduler WHERE id = :id", sql.Named("id", id))
+	row := db.QueryRow("SELECT id, date, title, comment, repeat FROM scheduler WHERE id = :id", sql.Named("id", id))
 	if err := row.Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat); err != nil {
 		return models.Task{}, err
 	}

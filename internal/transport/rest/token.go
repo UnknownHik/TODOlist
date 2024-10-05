@@ -5,16 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
+
+	"todo-rest/internal/config"
+	"todo-rest/internal/models"
 
 	"github.com/golang-jwt/jwt/v5"
-	"todo-rest/internal/models"
 )
 
 // TokenHandler обрабатывает запросы на аутентификацию
 func TokenHandler(w http.ResponseWriter, r *http.Request) {
 	var creds models.Credentials
 	var token models.JWTTokenResponse
+
+	cfg := config.LoadJWTConfig()
 
 	// Получаем пароль из тела запроса
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
@@ -24,7 +27,7 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получаем хранимый пароль из переменной окружения
-	pass := os.Getenv("TODO_PASSWORD")
+	pass := cfg.Password
 	if pass == "" {
 		token.Error = "Password not set in environment"
 		response(w, http.StatusInternalServerError, token)
@@ -45,7 +48,7 @@ func TokenHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Получаем подписанный токен
-	signedToken, err := jwtToken.SignedString([]byte(os.Getenv("TODO_JWT_SECRET")))
+	signedToken, err := jwtToken.SignedString([]byte(cfg.Secret))
 	if err != nil {
 		token.Error = "Failed to sign JWT"
 		response(w, http.StatusBadRequest, token)

@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	"todo-rest/internal/services"
 
 	"todo-rest/internal/config"
 	"todo-rest/internal/database"
 	"todo-rest/internal/models"
+	"todo-rest/internal/services"
 )
 
 // NextDateHandler обрабатывает запросы к /api/nextdate
@@ -106,18 +106,18 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetTasksListHandler обрабатывает GET запрос для вывода задач
 func GetTasksListHandler(w http.ResponseWriter, r *http.Request) {
-	var searchDate bool
+	var filter models.TaskFilter
 
 	search := r.FormValue("search")
 	searchParsed, err := time.Parse("02.01.2006", search)
 	if err == nil {
-		searchDate = true
-		search = searchParsed.Format("20060102")
+		filter.SearchData = true
+		filter.Search = searchParsed.Format("20060102")
 	} else {
-		search = "%" + search + "%"
+		filter.Search = "%" + search + "%"
 	}
 
-	tasks, err := database.GetTasks(search, searchDate)
+	tasks, err := database.GetTasks(filter)
 	if err != nil {
 		res := models.TaskResponse{Error: "error getting task list"}
 		response(w, http.StatusBadRequest, res)

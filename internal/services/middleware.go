@@ -4,15 +4,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
-	"os"
+
+	"todo-rest/internal/config"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func Auth(next http.HandlerFunc) http.HandlerFunc {
+func Auth(cfg *config.JWTConfig, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Смотрим наличие пароля
-		pass := os.Getenv("TODO_PASSWORD")
+		pass := cfg.Password
 		if len(pass) == 0 {
 			next(w, r)
 			return
@@ -26,7 +27,7 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
 		}
 		// Проверяем валидности токена
 		jwtToken, err := jwt.Parse(cookie.Value, func(t *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("TODO_JWT_SECRET")), nil
+			return []byte(cfg.Secret), nil
 		})
 		if err != nil || !jwtToken.Valid {
 			http.Error(w, "Authentification required", http.StatusUnauthorized)

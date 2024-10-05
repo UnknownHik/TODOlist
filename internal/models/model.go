@@ -20,6 +20,12 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
+// TaskFilter содержит структуру для поиска задачи по фильтру
+type TaskFilter struct {
+	Search     string
+	SearchData bool
+}
+
 // JWTTokenResponse содержит структуру для ответа с токеном
 type JWTTokenResponse struct {
 	Token string `json:"token,omitempty"`
